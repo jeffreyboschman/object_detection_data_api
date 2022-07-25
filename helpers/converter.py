@@ -116,7 +116,9 @@ class AnnotationConverter():
                     line = ','.join(map(str,data)) + "\n"
                     f.write(line)
         
-
+        # Create the dataset.yaml file
+        nc = len(categories)
+        print(nc)
 
 
     def run(self):
