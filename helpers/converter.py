@@ -1,5 +1,5 @@
-#from email.policy import default
 import os
+import yaml
 from collections import defaultdict
 from PythonAPI.pycocotools.coco import COCO
 import helpers.helpers as helpers
@@ -61,27 +61,22 @@ class AnnotationConverter():
         """Extracts bbox information from json files in the COCO dataset format and puts in a default dict
         
         """
-        all_annotations_dict = defaultdict(list)  # {Image_id: [{category, x_min, x_max, y_min, y_max},],}
+        all_annotations_dict = defaultdict(list)
         category_count_dict = {}
-        coco=COCO(annotation_file)  # this step loads annotations in memory (might take a few minutes)
-        #categories = ['dog', 'zebra', 'elephant', 'bear']
+        coco=COCO(annotation_file)  # This step loads annotations in memory (might take a few minutes)
+
         for idx, category in enumerate(categories):
-            orig_category_id = coco.getCatIds(catNms=[category])    # converts the category names (str) into their coco ids (int)
-            img_ids = coco.getImgIds(catIds=orig_category_id)               # get all ids of images that belong to the union of the categories
+            orig_category_id = coco.getCatIds(catNms=[category])    # Converts the category names (str) into their coco ids (int)
+            img_ids = coco.getImgIds(catIds=orig_category_id)               # Gets all ids of images that belong to the union of the categories
             category_count_dict[category] = len(img_ids)
             for img_id in img_ids:
-                
-                #img_file = str(img_id) + '.jpg'
-                #img_path = os.path.join(data_dir, img_file)
-                #data = [img_path]
                 img_info = coco.loadImgs(img_id)[0]
                 img_width = img_info['width']
                 img_height = img_info['height']
-                #url = img_info['coco_url']
                 annotation_ids = coco.getAnnIds(imgIds=img_id, catIds=orig_category_id, iscrowd=None)
                 annotations = coco.loadAnns(annotation_ids)
                 for annotation in annotations:
-                    x_min, y_min, bbox_width, bbox_height = annotation["bbox"]          # format is: top left point x value, top left point y value, width, height (top left of image is x=0, y=0). Unit is pixels.
+                    x_min, y_min, bbox_width, bbox_height = annotation["bbox"]          # Top left of image is x=0, y=0. Unit is pixels.
                     new_category_id = idx
                     bbox_dict = {'category': str(category), 'orig_category_id': int(orig_category_id[0]), 'new_category_id': int(new_category_id),
                                         'x_min': x_min, 'y_min': y_min, 'bbox_width': bbox_width, 'bbox_height': bbox_height, 
@@ -113,13 +108,23 @@ class AnnotationConverter():
                     norm_bbox_width = bbox_width / img_width
                     norm_bbox_height = bbox_height / img_height
                     data = [category, norm_x_center, norm_y_center, norm_bbox_width, norm_bbox_height]
-                    line = ','.join(map(str,data)) + "\n"
+                    line = ' '.join(map(str,data)) + "\n"
                     f.write(line)
         
         # Create the dataset.yaml file
-        nc = len(categories)
-        print(nc)
+        yaml_dict = {}
+        yaml_dict['path'] = 'rootdir  # Please change'
+        yaml_dict['train'] = 'images/train'
+        yaml_dict['val'] = 'images/val'
+        yaml_dict['test'] = 'images/test'
 
+        nc = len(categories)
+        yaml_dict['nc'] = nc
+        yaml_dict['names'] = categories
+        
+        output_yaml = os.path.join(output_dir, 'dataset.yaml')
+        with open(output_yaml, 'w') as yaml_f:
+            data1 = yaml.dump(yaml_dict, yaml_f, default_flow_style=None)
 
     def run(self):
         if self.input_format == 'coco_json':
